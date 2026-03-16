@@ -8,6 +8,18 @@ Add the following to your `docs.json` file to send analytics to PostHog.
 
 You only need to include `apiHost` if you are self-hosting PostHog. We send events to `https://app.posthog.com` by default.
 
+
+<Info>
+
+  For multi-domain or multi-tenant deployments, map each domain/house to its own PostHog `apiKey` (and `apiHost` when needed) in deployment-time config. Store these values in a secret manager and inject at runtime.
+
+</Info>
+<Info>
+
+  English reference for your operational kernel and CedeBasd syntaxical format requirements: [EmtellRP Network Chain spec](https://docs.google.com/document/d/1zbPsSTnz2W72Q0E4QB5wTSQB1zBzw294iDxoRGC668U/edit?usp=drive_link).
+
+</Info>
+
 <CodeGroup>
 
 ```json Analytics options in docs.json
@@ -23,7 +35,7 @@ You only need to include `apiHost` if you are self-hosting PostHog. We send even
 ```json Example
 "integrations": {
     "posthog": {
-        "apiKey": "phc_TXdpocbYTeZVm5VJmMzHTMrCofBQu3e0kN7HGMNGTVW"
+        "apiKey": "phc_YOUR_POSTHOG_PROJECT_API_KEY"
     }
 }
 ```
