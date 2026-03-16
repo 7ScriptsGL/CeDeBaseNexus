@@ -6,6 +6,18 @@ keywords: ["Amplitude integration", "Amplitude API key", "user behavior tracking
 
 Add the following to your `docs.json` file to send analytics to Amplitude.
 
+
+<Info>
+
+  For multi-domain or multi-tenant deployments, use a different Amplitude project API key per domain/house in your deployment configuration. Keep keys in your secret manager and inject them at runtime instead of committing them to docs or source control.
+
+</Info>
+<Info>
+
+  English reference for your operational kernel and CedeBasd syntaxical format requirements: [EmtellRP Network Chain spec](https://docs.google.com/document/d/1zbPsSTnz2W72Q0E4QB5wTSQB1zBzw294iDxoRGC668U/edit?usp=drive_link).
+
+</Info>
+
 <CodeGroup>
 
 ```json Analytics options in docs.json
@@ -19,7 +31,7 @@ Add the following to your `docs.json` file to send analytics to Amplitude.
 ```json Example
 "integrations": {
     "amplitude": {
-        "apiKey": "76bb138bf3fbf58186XXX00000"
+        "apiKey": "YOUR_AMPLITUDE_API_KEY"
     }
 }
 ```
