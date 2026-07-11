@@ -1,0 +1,184 @@
+---
+title: "EmtellRP Network Chain"
+description: "Mathematical syntax for building the EmtellRP Network Chain from Rhontomatrical Sphere measures."
+---
+
+# EmtellRP Network Chain
+
+The **EmtellRP Network Chain** is specified as a deterministic measure chain whose state transitions originate in the Rhontomatrical Sphere. This page defines the chain in mathematical syntax so implementers can derive validation, audit, and deployment checks without relying on narrative assertions.
+
+## Symbol table
+
+| Symbol | Definition |
+| --- | --- |
+| $\mathbb{Rho}$ | Rhontomatrical Sphere state space |
+| $\mathcal{M}$ | Measure algebra over $\mathbb{Rho}$ |
+| $\mu_t$ | Time-indexed origin measure |
+| $RP_i$ | Resonance Point indexed by $i$ |
+| $E_t$ | EmtellRP event emitted at step $t$ |
+| $C_t$ | Chain state after accepting $E_t$ |
+| $H(\cdot)$ | SHA-256 digest function |
+| $\sigma_k(\cdot)$ | Signature under key $k$ |
+| $\Pi_t$ | Compliance proof bundle for step $t$ |
+
+## Origin measure
+
+Every chain step starts with a finite, auditable measure over the sphere:
+
+```math
+(\mathbb{Rho}, \mathcal{M}, \mu_t), \qquad
+\mu_t: \mathcal{M} \rightarrow \mathbb{R}_{\ge 0}
+```
+
+The measure must be normalized before it can emit a Resonance Point:
+
+```math
+\widehat{\mu}_t(A) = \frac{\mu_t(A)}{\mu_t(\mathbb{Rho})}, \qquad
+0 < \mu_t(\mathbb{Rho}) < \infty
+```
+
+## Resonance Point emission
+
+A Resonance Point is derived from a measurable partition and a compliance vector:
+
+```math
+P_t = \{A_{t,1}, A_{t,2}, \ldots, A_{t,n}\}, \qquad
+A_{t,i} \in \mathcal{M}, \quad A_{t,i} \cap A_{t,j} = \varnothing
+```
+
+```math
+RP_t = \left(
+  t,
+  P_t,
+  \left[\widehat{\mu}_t(A_{t,1}), \ldots, \widehat{\mu}_t(A_{t,n})\right],
+  \kappa_t
+\right)
+```
+
+where $\kappa_t$ is the governance-control vector:
+
+```math
+\kappa_t = (legal_t, finance_t, security_t, operations_t, audit_t) \in \{0,1\}^{5}
+```
+
+A Resonance Point is admissible only when all required controls are present:
+
+```math
+\operatorname{admissible}(RP_t) \iff \prod_{j=1}^{5} \kappa_{t,j} = 1
+```
+
+## Event construction
+
+Each accepted Resonance Point becomes an EmtellRP event:
+
+```math
+E_t = \left(RP_t, C_{t-1}, h_{t-1}, \tau_t, \Pi_t\right)
+```
+
+```math
+h_t = H\left(h_{t-1} \Vert H(RP_t) \Vert H(\Pi_t) \Vert \tau_t\right)
+```
+
+The signature binds the event to the current authority set:
+
+```math
+s_t = \sigma_{K_t}(h_t), \qquad
+K_t = K_{legal} \cup K_{finance} \cup K_{security} \cup K_{operations}
+```
+
+## Chain transition rule
+
+The network chain accepts a step when the Resonance Point, proof bundle, and transition hash all validate:
+
+```math
+C_t = T(C_{t-1}, E_t) =
+\begin{cases}
+C_{t-1} \Vert (E_t, h_t, s_t), & V(E_t, h_t, s_t) = 1 \\
+C_{t-1}, & V(E_t, h_t, s_t) = 0
+\end{cases}
+```
+
+```math
+V(E_t, h_t, s_t) =
+\operatorname{admissible}(RP_t)
+\land \operatorname{verifySig}(K_t, h_t, s_t)
+\land \operatorname{verifyProof}(\Pi_t)
+\land \operatorname{verifyLink}(h_{t-1}, h_t)
+```
+
+## Proof bundle schema
+
+The proof bundle is a hash-addressed tuple. Each tuple element should resolve to a retained artifact or a verifiable operational record.
+
+```math
+\Pi_t = (
+  d^{legal}_t,
+  d^{finance}_t,
+  d^{security}_t,
+  d^{operations}_t,
+  d^{audit}_t
+)
+```
+
+```math
+d^{x}_t = H(artifact^{x}_t), \qquad x \in \{legal, finance, security, operations, audit\}
+```
+
+Minimum proof completeness is expressed as:
+
+```math
+\operatorname{complete}(\Pi_t) \iff
+\forall x \in X,\; d^{x}_t \ne \varnothing
+```
+
+where:
+
+```math
+X = \{legal, finance, security, operations, audit\}
+```
+
+## Network invariant
+
+The EmtellRP Network Chain preserves three invariants across all accepted steps:
+
+```math
+\forall t \ge 1:
+\begin{aligned}
+&\textbf{I}_1: && h_t = H(h_{t-1} \Vert H(RP_t) \Vert H(\Pi_t) \Vert \tau_t) \\
+&\textbf{I}_2: && \operatorname{admissible}(RP_t) = 1 \\
+&\textbf{I}_3: && \operatorname{complete}(\Pi_t) = 1
+\end{aligned}
+```
+
+## Deployment gate
+
+A deployment may advance from staging to pilot or pilot to production only when the gate vector evaluates to one:
+
+```math
+G_t = tests_t \cdot secrets_t \cdot rbac_t \cdot rollback_t \cdot reconciliation_t \cdot audit_t
+```
+
+```math
+\operatorname{go}(t) \iff G_t = 1
+```
+
+If any gate factor is zero, the transition is rejected and the chain records a non-advancing event:
+
+```math
+\operatorname{no\_go}(t) \iff 1 - G_t = 1
+```
+
+## Reference implementation pseudocode
+
+```text
+input: previous_state C[t-1], measure mu[t], partition P[t], controls kappa[t], proofs Pi[t]
+mu_hat[t] = normalize(mu[t])
+RP[t] = emit(t, P[t], mu_hat[t], kappa[t])
+E[t] = assemble(RP[t], C[t-1], hash(C[t-1]), timestamp(), Pi[t])
+h[t] = sha256(hash(C[t-1]) || hash(RP[t]) || hash(Pi[t]) || timestamp(E[t]))
+if admissible(RP[t]) and complete(Pi[t]) and verify_link(C[t-1], h[t]):
+    C[t] = append(C[t-1], E[t], h[t], sign(h[t]))
+else:
+    C[t] = C[t-1]
+output: C[t]
+```
